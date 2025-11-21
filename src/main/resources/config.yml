@@ -1,0 +1,22 @@
+# ShulkerPreviewBlocker Configuration
+
+# Enable/Disable the plugin functionality
+enabled: true
+
+# Message sent to player when they try to open a shulker without permission
+blocked-message: "§cВы не можете просматривать содержимое этого шалкера."
+
+# Log attempts to open shulkers without permission to console
+log-attempts: true
+
+# Worlds where the restriction is active.
+# Use "ALL" to apply to all worlds.
+# Example: ["world", "world_nether"]
+restricted-worlds:
+  - "ALL"
+
+# Permission required to bypass the restriction
+bypass-permission: "shulker.preview.bypass"
+
+# Command to reload config
+# Use /sppreload
