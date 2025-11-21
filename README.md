@@ -1,14 +1,51 @@
-Плагин, который блокирует просмотр содержимого Шалкер-ящиков в инвентаре, если у игрока нет соответствующего разрешения. Это эффективно против модов, таких как JEI, OptiFine, Xaero’s Minimap и других, которые автоматически показывают содержимое ящиков.
+# ShulkerPreviewBlocker
 
-Подходит для серверов с высокой безопасностью: приватные хранилища, магазины, ролевые серверы, FTB-модпаки.
+A custom Spigot/Paper plugin designed to block the preview of Shulker Box contents in the player's inventory unless they have a specific permission. This helps prevent players using client-side mods (like JEI, OptiFine, Xaero's) from easily viewing the contents of Shulker Boxes.
 
-🔒 Особенности
-Блокирует открытие Шалкер-ящиков в инвентаре (ПКМ по ящику).
-Работает против клиентских модов — даже если игрок использует JEI или OptiFine, он не увидит содержимое.
-Гибкая настройка через config.yml.
-Можно включить/отключить плагин в любой момент.
-Отправлять персонализированные сообщения игрокам.
-Логировать попытки просмотра в консоль (для админов).
-Ограничить действие только на определённых мирах.
-Команда /sppreload для перезагрузки настроек без перезапуска сервера.
-Поддержка кастомных разрешений (можно менять имя разрешения в конфиге).
+## Features
+
+- Blocks Shulker Box previews in the inventory.
+- Configurable via `config.yml`.
+- Toggle plugin functionality on/off.
+- Customizable blocked message.
+- Optional logging of blocked attempts.
+- Restrict blocking to specific worlds.
+- Permission-based bypass system.
+- Command to reload the configuration (`/sppreload`).
+
+## Commands
+
+- `/sppreload` - Reloads the configuration file. Requires `shulker.preview.reload` permission.
+
+## Permissions
+
+- `shulker.preview.bypass` - Allows the player to bypass the shulker preview restriction. Default: `false`
+- `shulker.preview.reload` - Allows the player to reload the config. Default: `op`
+
+## Configuration
+
+The plugin uses a `config.yml` file located in the `plugins/ShulkerPreviewBlocker/` directory after the first run.
+
+```yaml
+# ShulkerPreviewBlocker Configuration
+
+# Enable/Disable the plugin functionality
+enabled: true
+
+# Message sent to player when they try to open a shulker without permission
+blocked-message: "§cYou cannot view the contents of this shulker box."
+
+# Log attempts to open shulkers without permission to console
+log-attempts: true
+
+# Worlds where the restriction is active.
+# Use "ALL" to apply to all worlds.
+# Example: ["world", "world_nether"]
+restricted-worlds:
+  - "ALL"
+
+# Permission required to bypass the restriction
+bypass-permission: "shulker.preview.bypass"
+
+# Command to reload config
+# Use /sppreload
