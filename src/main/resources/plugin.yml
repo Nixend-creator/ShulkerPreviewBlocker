@@ -1,0 +1,18 @@
+name: ShulkerPreviewBlocker
+version: 1.0
+main: com.example.ShulkerPreviewBlocker
+api-version: 1.19
+author: n1xend
+description: Blocks shulker preview in inventory unless player has permission.
+commands:
+  sppreload:
+    description: Reloads the ShulkerPreviewBlocker config
+    usage: /sppreload
+    permission: shulker.preview.reload
+permissions:
+  shulker.preview.bypass:
+    description: Allows player to bypass the shulker preview restriction
+    default: false
+  shulker.preview.reload:
+    description: Allows player to reload the config
+    default: op
