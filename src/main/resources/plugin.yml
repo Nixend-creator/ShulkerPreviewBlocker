@@ -1,5 +1,5 @@
 name: ShulkerPreviewBlocker
-version: 1.0
+version: ${project.version}
 main: com.example.ShulkerPreviewBlocker
 api-version: 1.19
 author: n1xend
