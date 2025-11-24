@@ -1,11 +1,12 @@
 package com.nixendcreator; // Обновлённый пакет
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.ShulkerBox;
-import org.bukkit.block.BlockState;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -18,17 +19,36 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.logging.Logger;
+
+// ВНИМАНИЕ: Требуется добавить Gson в зависимости вашего проекта (например, через Maven или вручную в classpath).
+// Пример для Maven (добавить в pom.xml):
+// <dependency>
+//     <groupId>com.google.code.gson</groupId>
+//     <artifactId>gson</artifactId>
+//     <version>2.10.1</version> <!-- Или более новая версия -->
+//     <scope>provided</scope> <!-- scope provided, если библиотека включена в JAR плагина или на сервере -->
+// </dependency>
+// Если не используете Maven, скачайте JAR Gson и добавьте в classpath сборки.
 
 public class ShulkerPreviewBlocker extends JavaPlugin implements Listener {
 
     private FileConfiguration config;
     private Logger logger;
+    private static final String GITHUB_API_URL = "https://api.github.com/repos/Nixend-creator/ShulkerPreviewBlocker/releases/latest";
+    private static final String GITHUB_REPO_URL = "https://github.com/Nixend-creator/ShulkerPreviewBlocker";
 
     @Override
     public void onEnable() {
@@ -36,6 +56,10 @@ public class ShulkerPreviewBlocker extends JavaPlugin implements Listener {
         saveDefaultConfig(); // Creates config.yml if it doesn't exist
         reloadConfig(); // Loads the config
         getServer().getPluginManager().registerEvents(this, this);
+
+        // Запускаем проверку версии асинхронно после включения
+        checkVersionAsync();
+
         logger.info("ShulkerPreviewBlocker v" + getDescription().getVersion() + " enabled!");
     }
 
@@ -49,6 +73,104 @@ public class ShulkerPreviewBlocker extends JavaPlugin implements Listener {
         super.reloadConfig();
         this.config = getConfig();
     }
+
+    /**
+     * Асинхронно проверяет версию плагина на GitHub.
+     */
+    private void checkVersionAsync() {
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            try {
+                String latestVersion = fetchLatestVersionFromGitHub();
+                String currentVersion = getDescription().getVersion();
+
+                if (latestVersion != null && isNewerVersion(latestVersion, currentVersion)) {
+                    logger.info("[ShulkerPreviewBlocker] A new version is available: " + latestVersion);
+                    logger.info("[ShulkerPreviewBlocker] Download it at: " + GITHUB_REPO_URL);
+                    // Можно также отправить сообщение ops или админам, если нужно.
+                    // Bukkit.getOnlinePlayers().stream()
+                    //     .filter(player -> player.hasPermission("shulker.preview.update.notify"))
+                    //     .forEach(player -> player.sendMessage(ChatColor.YELLOW + "[ShulkerPreviewBlocker] A new version is available: " + latestVersion));
+                } else if (latestVersion != null) {
+                    // logger.info("[ShulkerPreviewBlocker] Plugin is up to date.");
+                } else {
+                    logger.warning("[ShulkerPreviewBlocker] Could not fetch latest version from GitHub.");
+                }
+            } catch (Exception e) {
+                logger.warning("[ShulkerPreviewBlocker] Failed to check for updates: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * Получает последнюю версию из GitHub API.
+     *
+     * @return Последняя версия или null в случае ошибки.
+     */
+    private String fetchLatestVersionFromGitHub() {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(GITHUB_API_URL))
+                .header("Accept", "application/vnd.github.v3+json") // GitHub API v3
+                .header("User-Agent", "ShulkerPreviewBlocker-Plugin") // Важно для GitHub API
+                .build();
+
+        try {
+            HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+
+            if (response.statusCode() == 200) {
+                // Читаем тело ответа
+                try (InputStreamReader reader = new InputStreamReader(response.body(), StandardCharsets.UTF_8)) {
+                    JsonObject jsonObject = JsonParser.parseReader(reader).getAsJsonObject();
+                    // Извлекаем тег релиза (обычно содержит "v" в начале, например, "v1.2.0")
+                    String tagName = jsonObject.get("tag_name").getAsString();
+                    // Убираем "v" в начале, если он есть, для чистого сравнения версий
+                    if (tagName.startsWith("v")) {
+                        tagName = tagName.substring(1);
+                    }
+                    return tagName;
+                }
+            } else {
+                logger.warning("[ShulkerPreviewBlocker] GitHub API request failed with status code: " + response.statusCode());
+            }
+        } catch (IOException | InterruptedException e) {
+            logger.warning("[ShulkerPreviewBlocker] Error during GitHub API request: " + e.getMessage());
+            Thread.currentThread().interrupt(); // Восстанавливаем прерванный статус потока
+        }
+        return null; // Возвращаем null в случае ошибки
+    }
+
+    /**
+     * Проверяет, является ли версия 'latest' новее, чем 'current'.
+     * Простое числовое сравнение версий в формате x.y.z.
+     *
+     * @param latest  Последняя версия с GitHub.
+     * @param current Текущая версия плагина.
+     * @return true, если latest новее.
+     */
+    private boolean isNewerVersion(String latest, String current) {
+        // Убираем "v" в начале, если он есть, на всякий случай
+        latest = latest.startsWith("v") ? latest.substring(1) : latest;
+        current = current.startsWith("v") ? current.substring(1) : current;
+
+        String[] latestParts = latest.split("\\.");
+        String[] currentParts = current.split("\\.");
+
+        for (int i = 0; i < Math.max(latestParts.length, currentParts.length); i++) {
+            int latestNum = i < latestParts.length ? Integer.parseInt(latestParts[i]) : 0;
+            int currentNum = i < currentParts.length ? Integer.parseInt(currentParts[i]) : 0;
+
+            if (latestNum > currentNum) {
+                return true; // latest новее
+            } else if (latestNum < currentNum) {
+                return false; // current новее или равна
+            }
+            // Если равны, переходим к следующей части версии
+        }
+        // Версии равны
+        return false;
+    }
+
 
     // Обработчик события открытия инвентаря
     @EventHandler(priority = EventPriority.HIGHEST) // Высокий приоритет, чтобы перехватить до других плагинов
