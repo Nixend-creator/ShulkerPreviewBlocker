@@ -1,9 +1,10 @@
+# plugin.yml
 name: ShulkerPreviewBlocker
-version: ${project.version}
-main: com.example.ShulkerPreviewBlocker
-api-version: 1.19
-author: n1xend
-description: Blocks shulker preview in inventory unless player has permission.
+version: 1.0.0 # Укажите желаемую версию плагина здесь или оставьте ${project.version} для Maven
+main: com.nixendcreator.ShulkerPreviewBlocker # Обновлённый пакет
+api-version: 1.21 # Обновлено до версии API 1.21
+author: Nixend-creator # Автор изменён
+description: Blocks shulker preview and placement unless player has permission. Allows players to interact with their own shulkers if they have 'self' permission.
 commands:
   sppreload:
     description: Reloads the ShulkerPreviewBlocker config
@@ -11,7 +12,10 @@ commands:
     permission: shulker.preview.reload
 permissions:
   shulker.preview.bypass:
-    description: Allows player to bypass the shulker preview restriction
+    description: Allows player to bypass ALL shulker preview and placement restrictions.
+    default: false
+  shulker.preview.self:
+    description: Allows player to interact with shulker boxes in their own inventory and place them.
     default: false
   shulker.preview.reload:
     description: Allows player to reload the config
